@@ -1,0 +1,117 @@
+version: "3.9"
+
+networks:
+  radius-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  db-data:
+
+services:
+
+  wireguard:
+    image: linuxserver/wireguard:latest
+    container_name: wg
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Asia/Karachi}
+      - SERVERURL=${SERVER_IP}
+      - SERVERPORT=${WG_PORT:-51820}
+      - PEERS=0
+      - PEERDNS=auto
+      - INTERNAL_SUBNET=${WG_SUBNET:-10.0.0.0/24}
+      - ALLOWEDIPS=0.0.0.0/0
+    volumes:
+      - ./wireguard/config:/config
+      - /lib/modules:/lib/modules:ro
+    ports:
+      - "${WG_PORT:-51820}:${WG_PORT:-51820}/udp"
+      - "8002:8002"
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.ip_forward=1
+    networks:
+      radius-net:
+        ipv4_address: 172.20.0.11
+
+  freeradius:
+    build: ./freeradius
+    container_name: freeradius_app
+    restart: unless-stopped
+    network_mode: "service:wireguard"
+    depends_on:
+      radius-db:
+        condition: service_healthy
+      wireguard:
+        condition: service_started
+    environment:
+      - DB_HOST=172.20.0.10
+      - DB_PASS=${DB_PASS}
+      - RADIUS_SECRET=${RADIUS_SECRET}
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'User-Name = \"test\"' | radclient -x 127.0.0.1:1812 auth ${RADIUS_SECRET} 2>&1 | grep -q 'Access'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  radius-db:
+    image: postgres:16-alpine
+    container_name: freeradius_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-radius}
+      POSTGRES_USER: ${DB_USER:-radius}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    networks:
+      radius-net:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-radius} -d ${DB_NAME:-radius}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  app:
+    image: ${APP_IMAGE:-ghcr.io/ahmadjavaiddev/command-portal-backend:latest}
+    container_name: isp_app
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    network_mode: "service:wireguard"
+    depends_on:
+      radius-db:
+        condition: service_healthy
+      wireguard:
+        condition: service_started
+    environment:
+      - NODE_ENV=production
+      - PORT=8002
+      - DATABASE_URL=postgresql://${DB_USER:-radius}:${DB_PASS}@172.20.0.10:5432/${DB_NAME:-radius}?schema=public
+      - DB_PASSWORD=${DB_PASS}
+      - SERVER_WG_PUBKEY=${SERVER_WG_PUBKEY}
+      - SERVER_ENDPOINT=${SERVER_IP}:${WG_PORT:-51820}
+      - WG_CONFIG_PATH=/config/wg_confs/wg0.conf
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
+      - RADIUS_SECRET=${RADIUS_SECRET}
+    volumes:
+      - ./wireguard/config:/config
+      - /var/run/docker.sock:/var/run/docker.sock
