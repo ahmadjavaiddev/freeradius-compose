@@ -15,7 +15,6 @@ sql {
 			certificate_file = "/etc/ssl/certs/private/client.crt"
 			private_key_file = "/etc/ssl/certs/private/client.key"
 			cipher = "DHE-RSA-AES256-SHA:AES128-SHA"
-
 			tls_required = yes
 			tls_check_cert = no
 			tls_check_cert_cn = no
@@ -29,7 +28,6 @@ sql {
 
 	mongo {
 		appname = "freeradius"
-
 		tls {
 			certificate_file = /path/to/file
 			certificate_password = "password"
@@ -41,10 +39,10 @@ sql {
 		}
 	}
 
-	server = "172.25.0.10"
+	server = "__DB_HOST__"
 	port = 5432
 	login = "radius"
-	password = "radius"
+	password = "__DB_PASS__"
 	radius_db = "radius"
 
 	acct_table1 = "radacct"
@@ -57,10 +55,9 @@ sql {
 	usergroup_table = "radusergroup"
 	delete_stale_sessions = yes
 
-
 	pool {
-		start = ${thread[pool].start_servers}	
-		min = ${thread[pool].min_spare_servers}	
+		start = ${thread[pool].start_servers}
+		min = ${thread[pool].min_spare_servers}
 		max = ${thread[pool].max_servers}
 		spare = ${thread[pool].max_spare_servers}
 		uses = 0
