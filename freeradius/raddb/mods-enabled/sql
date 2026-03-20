@@ -41,7 +41,7 @@ sql {
 		}
 	}
 
-	server = "172.20.0.10"
+	server = "172.21.0.10"
 	port = 5432
 	login = "radius"
 	password = "radius"

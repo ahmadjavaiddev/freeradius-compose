@@ -42,7 +42,7 @@ services:
       - net.ipv4.ip_forward=1
     networks:
       radius-net:
-        ipv4_address: 172.20.0.11
+        ipv4_address: 172.21.0.11
 
   freeradius:
     build: ./freeradius
@@ -55,7 +55,7 @@ services:
       wireguard:
         condition: service_started
     environment:
-      - DB_HOST=172.20.0.10
+      - DB_HOST=172.21.0.10
       - DB_PASS=${DB_PASS}
       - RADIUS_SECRET=${RADIUS_SECRET}
     healthcheck:
@@ -80,7 +80,7 @@ services:
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       radius-net:
-        ipv4_address: 172.20.0.10
+        ipv4_address: 172.21.0.10
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-radius} -d ${DB_NAME:-radius}"]
       interval: 5s
@@ -103,7 +103,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8002
-      - DATABASE_URL=postgresql://${DB_USER:-radius}:${DB_PASS}@172.20.0.10:5432/${DB_NAME:-radius}?schema=public
+      - DATABASE_URL=postgresql://${DB_USER:-radius}:${DB_PASS}@172.21.0.10:5432/${DB_NAME:-radius}?schema=public
       - DB_PASSWORD=${DB_PASS}
       - SERVER_WG_PUBKEY=${SERVER_WG_PUBKEY}
       - SERVER_ENDPOINT=${SERVER_IP}:${WG_PORT:-51820}
