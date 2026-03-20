@@ -1,5 +1,8 @@
 FROM freeradius/freeradius-server:latest
 
+# Cache bust — increment this number to force full rebuild
+ARG CACHE_BUST=2
+
 COPY raddb/clients.conf /etc/freeradius/clients.conf
 COPY raddb/mods-available/sql /etc/freeradius/mods-available/sql
 COPY raddb/sites-enabled/default /etc/freeradius/sites-enabled/default
