@@ -1,0 +1,37 @@
+# Stop and remove everything
+docker rm -f freeradius_app freeradius_db wg isp_app 2>/dev/null
+docker volume rm freeradius-compose_db-data 2>/dev/null
+docker network rm freeradius-compose_radius-net 2>/dev/null
+docker rmi freeradius-compose-freeradius:latest 2>/dev/null
+rm -rf ~/freeradius-compose
+
+# Verify clean
+docker ps -a | grep -E "freeradius|wg|isp"
+docker volume ls | grep freeradius
+docker network ls | grep freeradius
+
+# On MikroTik:
+/interface wireguard peers remove [find]
+/interface wireguard remove [find]
+/radius remove [find]
+/ppp aaa set use-radius=no
+/ip address remove [find interface=wg0]
+
+# Setup Process
+git clone https://github.com/ahmadjavaiddev/freeradius-compose.git
+cd freeradius-compose
+sudo nano .env
+
+docker compose up -d --build
+docker compose logs -f
+
+# Subnet fix setup
+sed -i 's|Address = 10.0.0.1$|Address = 10.0.0.1/24|' \
+  ~/freeradius-compose/wireguard/config/wg_confs/wg0.conf
+
+docker compose restart wireguard
+docker compose restart freeradius
+
+# Keys Checking
+docker exec wg cat /config/server/publickey-server
+docker exec wg cat /config/wg_confs/wg0.conf
