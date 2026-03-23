@@ -1,5 +1,3 @@
-version: "3.9"
-
 networks:
   radius-net:
     driver: bridge
@@ -29,8 +27,10 @@ services:
       - PEERDNS=auto
       - INTERNAL_SUBNET=${WG_SUBNET:-10.0.0.0/24}
       - ALLOWEDIPS=0.0.0.0/0
+      - LOG_CONFS=false
     volumes:
       - ./wireguard/config:/config
+      - ./wireguard/post-start.sh:/custom-cont-init.d/post-start.sh
       - /lib/modules:/lib/modules:ro
     ports:
       - "${WG_PORT:-51820}:${WG_PORT:-51820}/udp"
@@ -43,6 +43,12 @@ services:
     networks:
       radius-net:
         ipv4_address: 172.25.0.11
+    healthcheck:
+      test: ["CMD-SHELL", "wg show wg0 | grep -q 'interface' && ip addr show wg0 | grep -q '10.0.0.1/24'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   freeradius:
     build: ./freeradius
@@ -53,7 +59,7 @@ services:
       radius-db:
         condition: service_healthy
       wireguard:
-        condition: service_started
+        condition: service_healthy
     environment:
       - DB_HOST=172.25.0.10
       - DB_PASS=${DB_PASS}
@@ -63,7 +69,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 20s
 
   radius-db:
     image: postgres:16-alpine
@@ -99,13 +105,12 @@ services:
       radius-db:
         condition: service_healthy
       wireguard:
-        condition: service_started
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - PORT=8002
       - DATABASE_URL=postgresql://${DB_USER:-radius}:${DB_PASS}@172.25.0.10:5432/${DB_NAME:-radius}?schema=public
       - DB_PASSWORD=${DB_PASS}
-      - SERVER_WG_PUBKEY=${SERVER_WG_PUBKEY}
       - SERVER_ENDPOINT=${SERVER_IP}:${WG_PORT:-51820}
       - WG_CONFIG_PATH=/config/wg_confs/wg0.conf
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
