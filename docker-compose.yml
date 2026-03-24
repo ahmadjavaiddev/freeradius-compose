@@ -53,6 +53,7 @@ services:
   freeradius:
     build: ./freeradius
     container_name: freeradius_app
+    command: ["freeradius", "-f"]
     restart: unless-stopped
     network_mode: "service:wireguard"
     depends_on:
