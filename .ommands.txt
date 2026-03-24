@@ -36,3 +36,5 @@ docker compose restart freeradius
 docker exec wg cat /config/server/publickey-server
 docker exec wg cat /config/wg_confs/wg0.conf
 docker exec wg wg show
+
+/interface pppoe-server server set [find] authentication=pap
