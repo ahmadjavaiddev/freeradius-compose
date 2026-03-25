@@ -45,4 +45,6 @@ docker exec wg wg show
 # ===>>> If the router is connected but the internet is not working
 /ip pool add name=customer_pool ranges=10.10.10.2-10.10.10.254
 /ppp profile set [find default=yes] local-address=10.10.10.1 remote-address=customer_pool dns-server=8.8.8.8,1.1.1.1
+
+# ===>>> Disonnect the User
 /interface pppoe-server remove [find user="ahmad_fastnet"]
