@@ -14,5 +14,8 @@ sed -i \
   -e "s|__RADIUS_SECRET__|${RADIUS_SECRET}|g" \
   /etc/freeradius/clients.conf
 
+# --- NEW FIX FOR ACCOUNTING OVERWRITE BUG ---
+find /etc/freeradius -name "queries.conf" -type f -exec sed -i 's/%{Acct-Unique-Session-Id}/%{Acct-Session-Id}/g' {} +
+
 echo "[entrypoint] Done. Starting FreeRADIUS..."
 exec "$@"
