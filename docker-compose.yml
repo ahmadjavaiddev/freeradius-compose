@@ -119,6 +119,7 @@ services:
       - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
       - RADIUS_SECRET=${RADIUS_SECRET}
       - INNGEST_SIGNING_KEY=${INNGEST_SIGNING_KEY}
+      - INNGEST_EVENT_KEY=${INNGEST_EVENT_KEY}
     volumes:
       - ./wireguard/config:/config
       - /var/run/docker.sock:/var/run/docker.sock
