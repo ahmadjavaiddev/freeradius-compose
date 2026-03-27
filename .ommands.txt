@@ -38,13 +38,17 @@ docker exec wg cat /config/wg_confs/wg0.conf
 docker exec wg wg show
 
 
-# ===>>> If the extra security is causing error
+# If the extra security is causing error
 /interface pppoe-server server set [find] authentication=pap
 
 
-# ===>>> If the router is connected but the internet is not working
+# If the router is connected but the internet is not working
 /ip pool add name=customer_pool ranges=10.10.10.2-10.10.10.254
 /ppp profile set [find default=yes] local-address=10.10.10.1 remote-address=customer_pool dns-server=8.8.8.8,1.1.1.1
 
-# ===>>> Disonnect the User
+# Disonnect the User
 /interface pppoe-server remove [find user="ahmad_fastnet"]
+
+
+# Backup
+docker exec radius_db_backup sh backup.sh  // Immediate backup
