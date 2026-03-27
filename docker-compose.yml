@@ -125,34 +125,32 @@ services:
       - ./wireguard/config:/config
       - /var/run/docker.sock:/var/run/docker.sock
 
-  db-backup:
-    image: eeshugerman/postgres-backup-s3:16
-    container_name: radius_db_backup
+  backups:
+    image: offen/docker-volume-backup:latest
+    container_name: wisp_full_backup
     restart: unless-stopped
     depends_on:
       radius-db:
         condition: service_healthy
-    networks:
-      - radius-net
+    volumes:
+      # We mount the folders we want to protect
+      - ./wireguard/config:/backup/wireguard_keys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - TZ=${TZ:-Asia/Karachi}
+      # 1. Database Connection (It will run pg_dump for you)
+      - BACKUP_FILENAME=wisp-full-backup-%Y-%m-%dT%H-%M-%S.tar.gz
+      - BACKUP_DATABASE_URL=postgres://${DB_USER:-radius}:${DB_PASS}@172.25.0.10:5432/${DB_NAME:-radius}
 
-      - POSTGRES_HOST=172.25.0.10
-      - POSTGRES_DATABASE=${DB_NAME:-radius}
-      - POSTGRES_USER=${DB_USER:-radius}
-      - POSTGRES_PASSWORD=${DB_PASS}
+      # 2. Schedule (Every 6 hours)
+      - BACKUP_CRON_EXPRESSION=0 */6 * * *
 
-      # --- Backup Schedule ---
-      # Set to 2:40 AM for your immediate test run
-      - SCHEDULE=0 */6 * * *
+      # 3. Cloudflare R2 Settings
+      - AWS_S3_ENDPOINT=${S3_ENDPOINT}
+      - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${S3_SECRET_KEY}
+      - AWS_S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - AWS_REGION=auto
 
-      # --- Cloud Storage (From your .env) ---
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_REGION=${S3_REGION:-auto} # Updated for Cloudflare R2
-      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY}
-      - S3_SECRET_ACCESS_KEY=${S3_SECRET_KEY}
-      - S3_BUCKET=${S3_BUCKET_NAME}
-      - S3_PREFIX=wisp-portal-backups/
-
-      # --- Safety & Cleanup ---
-      - BACKUP_KEEP_DAYS=14 # Deletes backups older than 2 weeks
+      # 4. Retention
+      - BACKUP_RETENTION_DAYS=14
