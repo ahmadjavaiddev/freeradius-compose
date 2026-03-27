@@ -52,3 +52,7 @@ docker exec wg wg show
 
 # Backup
 docker exec radius_db_backup sh backup.sh  // Immediate backup
+
+
+# Restore DB Backup - from local PC
+docker run --rm -v "${PWD}:/backup" postgres:16 pg_restore --no-owner -d "postgres://f923e40d96d4e0517d0b4b6431b34f64ca65a35802e053d77bca8195bd65f9c7:sk_7__8ZMuVfPJ2uICAeUewW@db.prisma.io:5432/postgres?sslmode=require" -1 /backup/wisp-portal-backups__radius_2026-03-27T21_41_14.dump
