@@ -121,6 +121,8 @@ services:
       - RADIUS_SECRET=${RADIUS_SECRET}
       - INNGEST_SIGNING_KEY=${INNGEST_SIGNING_KEY}
       - INNGEST_EVENT_KEY=${INNGEST_EVENT_KEY}
+      - AXIOM_DATASET=${AXIOM_DATASET}
+      - AXIOM_TOKEN=${AXIOM_TOKEN}
     volumes:
       - ./wireguard/config:/config
       - /var/run/docker.sock:/var/run/docker.sock
