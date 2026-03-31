@@ -52,7 +52,10 @@ docker exec wg wg show
 
 
 # Backup
-./wisp-backup.sh  // Immediate backup
+./wisp-backup.sh                                    // Immediate backup
+crontab -l                                          // List cron jobs
+crontab -l | grep -v 'wisp-backup.sh' | crontab -   // Remove crons
+./setup-cron.sh                                     // Register our crons
 
 
 # Backup Restore
